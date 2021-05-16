@@ -39,7 +39,7 @@ exports.signup = async (req, res) => {
     twitter,
     instagram,
   } = req.body.user;
-
+  console.log(req.body.user);
   if (!isEmail(email)) return res.status(401).send("Invalid Email");
   if (password.length < 6) {
     return res.status(401).send("Password must be at least 6 characters");

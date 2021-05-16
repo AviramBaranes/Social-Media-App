@@ -14,7 +14,7 @@ module.exports = (req, res, next) => {
     req.userId = userId;
     next();
   } catch (err) {
-    console.log(err);
+    console.log(`ERROR: ${err}`);
     return res.status(401).send("Unautorized");
   }
 };

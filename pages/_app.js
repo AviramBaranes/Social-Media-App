@@ -25,7 +25,7 @@ class MyApp extends App {
 
       try {
         const res = await axios.get(`${baseUrl}/api/auth`, {
-          headers: { Authorization: token }
+          headers: { Authorization: token },
         });
 
         const { user, userFollowStats } = res.data;

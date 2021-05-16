@@ -16,6 +16,8 @@ require("dotenv").config({ path: "./config.env" });
 
 const signupRoute = require("./Backend/routes/signup");
 const authRoute = require("./Backend/routes/auth");
+const searchRoute = require("./Backend/routes/search");
+const postRoute = require("./Backend/routes/post");
 
 const connectDb = require("./utilsServer/connectDb");
 
@@ -27,6 +29,8 @@ nextApp.prepare().then(() => {
   app.use(cors());
   app.use("/api/signup", signupRoute);
   app.use("/api/auth", authRoute);
+  app.use("/api/search", searchRoute);
+  app.use("/api/post", postRoute);
 
   app.all("*", (req, res) => handler(req, res));
   server.listen(PORT, (err) => {
