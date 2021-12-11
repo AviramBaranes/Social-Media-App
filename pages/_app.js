@@ -12,7 +12,13 @@ class MyApp extends App {
     const { token } = parseCookies(ctx);
     let pageProps = {};
 
-    const protectedRoutes = ctx.pathname === "/";
+    const protectedRoutes =
+      ctx.pathname === "/" ||
+      ctx.pathname === "/[username]" ||
+      ctx.pathname === "/notifications" ||
+      ctx.pathname === "/post/[postId]" ||
+      ctx.pathname === "/messages" ||
+      ctx.pathname === "/search";
 
     if (!token) {
       protectedRoutes && redirectUser(ctx, "/login");
@@ -28,12 +34,12 @@ class MyApp extends App {
           headers: { Authorization: token },
         });
 
-        const { user, userFollowStats } = res.data;
+        const { user, userFollowersStats } = res.data;
 
         if (user) !protectedRoutes && redirectUser(ctx, "/");
 
         pageProps.user = user;
-        pageProps.userFollowStats = userFollowStats;
+        pageProps.userFollowStats = userFollowersStats;
       } catch (error) {
         destroyCookie(ctx, "token");
         redirectUser(ctx, "/login");

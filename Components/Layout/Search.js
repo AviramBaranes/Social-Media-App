@@ -1,8 +1,8 @@
-import axios from "axios";
+import React, { useState } from "react";
 import { List, Image, Search } from "semantic-ui-react";
+import axios from "axios";
 import cookie from "js-cookie";
 import Router from "next/router";
-import { useState, useEffect } from "react";
 import baseUrl from "../../utils/baseUrl";
 let cancel;
 
@@ -11,42 +11,32 @@ function SearchComponent() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
 
-  const changeHandler = async (e) => {
+  const handleChange = async e => {
     const { value } = e.target;
     setText(value);
-    if (value.length === 0) return;
-    if (value.trim().length === 0) return;
-
     setLoading(true);
 
     try {
       cancel && cancel();
       const CancelToken = axios.CancelToken;
-
       const token = cookie.get("token");
+
       const res = await axios.get(`${baseUrl}/api/search/${value}`, {
         headers: { Authorization: token },
-        cancelToken: new CancelToken((cancler) => {
-          cancel = cancler;
-        }),
+        cancelToken: new CancelToken(canceler => {
+          cancel = canceler;
+        })
       });
 
-      if (res.data.length === 0) {
-        results.length > 0 && setResults([]);
-
-        return setLoading(false);
-      }
+      if (res.data.length === 0) return setLoading(false);
 
       setResults(res.data);
-    } catch (err) {
-      console.log(err);
+    } catch (error) {
+      alert("Error Searching");
     }
+
     setLoading(false);
   };
-
-  useEffect(() => {
-    if (text.length === 0 && loading) setLoading(false);
-  }, [text]);
 
   return (
     <Search
@@ -59,21 +49,22 @@ function SearchComponent() {
       value={text}
       resultRenderer={ResultRenderer}
       results={results}
-      onSearchChange={changeHandler}
+      onSearchChange={handleChange}
       minCharacters={1}
-      onResultSelect={(e, data) => Router.push(`/${data.results.username}`)}
+      onResultSelect={(e, data) => Router.push(`/${data.result.username}`)}
     />
   );
 }
 
-const ResultRenderer = ({ _id, name, profilePicUrl }) => {
+const ResultRenderer = ({ _id, profilePicUrl, name }) => {
   return (
     <List key={_id}>
       <List.Item>
-        <Image src={profilePicUrl} alt="profile pic" avatar />
+        <Image src={profilePicUrl} alt="ProfilePic" avatar />
         <List.Content header={name} as="a" />
       </List.Item>
     </List>
   );
 };
+
 export default SearchComponent;

@@ -1,6 +1,8 @@
 const User = require("../models/User");
 const Profile = require("../models/Profile");
 const Follower = require("../models/Follower");
+const Notification = require("../models/Notification");
+const Chat = require("../models/Chat");
 
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -20,7 +22,7 @@ exports.checkUsername = async (req, res) => {
 
     if (user) return res.status(401).send("User Already Taken");
 
-    return res.status(200).send("Username Availeble");
+    return res.status(200).send("Available");
   } catch (err) {
     console.log(err);
     return res.status(500).send("Server Error");
@@ -39,7 +41,7 @@ exports.signup = async (req, res) => {
     twitter,
     instagram,
   } = req.body.user;
-  console.log(req.body.user);
+
   if (!isEmail(email)) return res.status(401).send("Invalid Email");
   if (password.length < 6) {
     return res.status(401).send("Password must be at least 6 characters");
@@ -79,6 +81,8 @@ exports.signup = async (req, res) => {
       followers: [],
       following: [],
     }).save();
+    await new Notification({ user: user._id, notifications: [] }).save();
+    await new Chat({ user: user._id, chats: [] }).save();
 
     const payload = { userId: user._id };
     jwt.sign(

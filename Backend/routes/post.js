@@ -15,7 +15,7 @@ router.delete("/:postId", authMiddleware, postController.deletePost);
 
 router.post("/like/:postId", authMiddleware, postController.likePost);
 
-router.post("/unLike/:postId", authMiddleware, postController.unLikePost);
+router.put("/unLike/:postId", authMiddleware, postController.unLikePost);
 
 router.get("/like/:postId", authMiddleware, postController.getAllLikes);
 

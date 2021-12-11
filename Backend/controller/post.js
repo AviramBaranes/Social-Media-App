@@ -1,7 +1,10 @@
 const Post = require("../models/Post");
 const User = require("../models/User");
+const Follower = require("../models/Follower");
 
 const uuid = require("uuid").v4;
+
+const notificationsActions = require("../../utilsServer/notificationActions");
 
 exports.createPost = async (req, res) => {
   const { text, picUrl, location } = req.body;
@@ -18,7 +21,9 @@ exports.createPost = async (req, res) => {
 
     const post = await new Post(newPost).save();
 
-    return res.json(post._id);
+    const postCreated = await Post.findById(post._id).populate("user");
+
+    return res.json(postCreated);
   } catch (err) {
     console.log(err);
     return res.status(500).send("Server Error");
@@ -26,13 +31,43 @@ exports.createPost = async (req, res) => {
 };
 
 exports.getPosts = async (req, res) => {
+  let { pageNumber } = req.query;
+  pageNumber = Number(pageNumber);
+  const postPerPage = 6;
   try {
-    const posts = await Post.find()
-      .sort({ createdAt: -1 })
-      .populate("user")
-      .populate("comments.user");
+    const { userId } = req;
 
-    return res.json(posts);
+    const loggedUser = await Follower.findOne({ user: userId }).select(
+      "-followers"
+    );
+
+    console.log(loggedUser);
+
+    let posts;
+
+    if (loggedUser.following.length > 0) {
+      posts = await Post.find({
+        user: {
+          $in: [
+            userId,
+            ...loggedUser.following.map((aFollowing) => aFollowing.user),
+          ],
+        },
+      })
+        .populate("user")
+        .populate("comments.user")
+        .skip((pageNumber - 1) * postPerPage)
+        .limit(postPerPage)
+        .sort({ createdAt: -1 });
+    } else {
+      posts = await Post.find({ user: userId })
+        .populate("user")
+        .populate("comments.user")
+        .skip((pageNumber - 1) * postPerPage)
+        .limit(postPerPage)
+        .sort({ createdAt: -1 });
+    }
+    return res.status(200).json(posts);
   } catch (err) {
     console.log(err);
     return res.status(500).send("Server Error");
@@ -42,7 +77,9 @@ exports.getPosts = async (req, res) => {
 exports.getDetailPost = async (req, res) => {
   const { postId } = req.params;
   try {
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId)
+      .populate("user")
+      .populate("comments.user");
 
     if (!post) return res.status(404).send("Post not found");
 
@@ -95,8 +132,6 @@ exports.likePost = async (req, res) => {
       return res.status(401).send("Post not found");
     }
 
-    console.log(`---------------------------post:`, post);
-
     const isLiked = post.likes.some((like) => like.user.toString() === userId);
 
     if (isLiked) {
@@ -105,6 +140,14 @@ exports.likePost = async (req, res) => {
 
     post.likes.unshift({ user: userId });
     await post.save();
+
+    if (post.user.toString() !== userId) {
+      await notificationsActions.newLikeNotification(
+        userId,
+        postId,
+        post.user._id.toString()
+      );
+    }
 
     return res.status(200).send("post been liked");
   } catch (err) {
@@ -134,6 +177,15 @@ exports.unLikePost = async (req, res) => {
 
     post.likes.splice(likedPostIndex, 1);
     await post.save();
+
+    if (post.user.toString() !== userId) {
+      await notificationsActions.removeLikeNotification(
+        userId,
+        postId,
+        post.user._id.toString()
+      );
+    }
+
     return res.status(200).send("post unliked");
   } catch (err) {
     console.log(err);
@@ -161,6 +213,8 @@ exports.postComment = async (req, res) => {
   try {
     const { postId } = req.params;
 
+    const { userId } = req;
+
     const { text } = req.body;
 
     if (text.length < 1) {
@@ -170,7 +224,7 @@ exports.postComment = async (req, res) => {
 
     const newComment = {
       _id: uuid(),
-      user: req.userId,
+      user: userId,
       text,
       date: Date.now(),
     };
@@ -178,6 +232,16 @@ exports.postComment = async (req, res) => {
     post.comments.unshift(newComment);
 
     await post.save();
+
+    if (userId !== post.user.toString()) {
+      await notificationsActions.newCommentNotification(
+        postId,
+        newComment._id,
+        userId,
+        post.user.toString(),
+        text
+      );
+    }
 
     return res.status(200).json(newComment._id);
   } catch (err) {
@@ -190,6 +254,8 @@ exports.deleteComment = async (req, res) => {
   try {
     const { commentId, postId } = req.params;
 
+    const { userId } = req;
+
     const post = await Post.findById(postId);
     if (!post) {
       return res.status(401).send("post not found");
@@ -200,7 +266,7 @@ exports.deleteComment = async (req, res) => {
       return res.status(401).send("Comment not found");
     }
 
-    const user = await User.findById(req.userId);
+    const user = await User.findById(userId);
 
     const commentDeleter = async () => {
       const commentIndex = post.comments.findIndex(
@@ -208,6 +274,16 @@ exports.deleteComment = async (req, res) => {
       );
       post.comments.splice(commentIndex, 1);
       await post.save();
+
+      if (userId !== post.user.toString()) {
+        await notificationsActions.removeCommentNotification(
+          postId,
+          commentId,
+          userId,
+          post.user.toString()
+        );
+      }
+
       return res.status(200).send("deleted comment");
     };
 

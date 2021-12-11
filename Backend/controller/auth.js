@@ -1,6 +1,8 @@
 // const User = require("mongoose").model("User").schema;
 const User = require("../models/User");
 const FollowersModel = require("../models/Follower");
+const Notification = require("../models/Notification");
+const Chat = require("../models/Chat");
 
 const bycrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -43,6 +45,12 @@ exports.login = async (req, res) => {
 
     if (!isPassword) {
       return res.status(401).send("Invalid Credenrials");
+    }
+
+    const userChat = await Chat.findOne({ user: user._id });
+
+    if (!userChat) {
+      await new Chat({ user: user._id, chat: [] }).save();
     }
 
     const payload = { userId: user._id };
