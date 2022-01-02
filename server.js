@@ -1,31 +1,31 @@
-const express = require("express");
-const http = require("http");
-const next = require("next");
-const cors = require("cors");
+const express = require('express');
+const http = require('http');
+const next = require('next');
+const cors = require('cors');
 
 const app = express();
 const server = http.Server(app);
 // const io = require("socket.io")(server);
-const io = require("./socket").init(server);
+const io = require('./socket').init(server);
 
-const dev = process.env.NODE_ENV !== "production";
+const dev = process.env.NODE_ENV !== 'production';
 
 const nextApp = next({ dev });
 
 const handler = nextApp.getRequestHandler();
 
-require("dotenv").config({ path: "./config.env" });
+require('dotenv').config({ path: './config.env' });
 
-const signupRoute = require("./Backend/routes/signup");
-const authRoute = require("./Backend/routes/auth");
-const searchRoute = require("./Backend/routes/search");
-const postRoute = require("./Backend/routes/post");
-const profileRouter = require("./Backend/routes/profile");
-const notificationsRouter = require("./Backend/routes/notifications");
-const chatRouter = require("./Backend/routes/chat");
-const resetRouter = require("./Backend/routes/reset");
+const signupRoute = require('./Backend/routes/signup');
+const authRoute = require('./Backend/routes/auth');
+const searchRoute = require('./Backend/routes/search');
+const postRoute = require('./Backend/routes/post');
+const profileRouter = require('./Backend/routes/profile');
+const notificationsRouter = require('./Backend/routes/notifications');
+const chatRouter = require('./Backend/routes/chat');
+const resetRouter = require('./Backend/routes/reset');
 
-const connectDb = require("./utilsServer/connectDb");
+const connectDb = require('./utilsServer/connectDb');
 
 connectDb();
 app.use(express.json());
@@ -34,45 +34,36 @@ const {
   addUser,
   removeUser,
   findConnectedUser,
-} = require("./utilsServer/roomActions");
-const messagesActions = require("./utilsServer/messageActions");
+} = require('./utilsServer/roomActions');
+const messagesActions = require('./utilsServer/messageActions');
 
-io.on("connection", (socket) => {
-  console.log("socket:[connection]");
-
-  socket.on("join", async ({ userId }) => {
-    console.log("socket:[join]");
-
+io.on('connection', (socket) => {
+  socket.on('join', async ({ userId }) => {
     const users = await addUser(userId, socket.id);
 
     setInterval(() => {
-      socket.emit("connectedUsers", {
+      socket.emit('connectedUsers', {
         users: users.filter((user) => user.userId !== userId),
       });
     }, 10000);
   });
 
-  socket.on("loadMessages", async ({ userId, messageWith }) => {
-    console.log("socket:[loadMessages]");
-
+  socket.on('loadMessages', async ({ userId, messageWith }) => {
     const { chat, error } = await messagesActions.loadMessages(
       userId,
       messageWith
     );
 
     if (!error) {
-      socket.emit("messageLoaded", { chat });
+      socket.emit('messageLoaded', { chat });
     }
     //
     else {
-      socket.emit("noChatFound");
-      console.log("socket:[loadMessages_error]", error);
+      socket.emit('noChatFound');
     }
   });
 
-  socket.on("sendNewMessage", async ({ userId, msgSendToUserId, msg }) => {
-    console.log("socket:[sendNewMessage]");
-
+  socket.on('sendNewMessage', async ({ userId, msgSendToUserId, msg }) => {
     const { newMsg, error } = await messagesActions.sendMsg(
       userId,
       msgSendToUserId,
@@ -82,7 +73,7 @@ io.on("connection", (socket) => {
     const receiverSocket = findConnectedUser(msgSendToUserId);
 
     if (receiverSocket) {
-      io.to(receiverSocket.socketId).emit("newMsgReceived", { newMsg });
+      io.to(receiverSocket.socketId).emit('newMsgReceived', { newMsg });
     }
     //
     else {
@@ -90,11 +81,11 @@ io.on("connection", (socket) => {
     }
 
     if (!error) {
-      socket.emit("msgSent", { newMsg });
+      socket.emit('msgSent', { newMsg });
     }
   });
 
-  socket.on("deleteMessage", async ({ userId, messageWith, messageId }) => {
+  socket.on('deleteMessage', async ({ userId, messageWith, messageId }) => {
     const { success } = await messagesActions.deleteMsg(
       userId,
       messageWith,
@@ -102,12 +93,12 @@ io.on("connection", (socket) => {
     );
 
     if (success) {
-      socket.emit("msgDeleted");
+      socket.emit('msgDeleted');
     }
   });
 
   socket.on(
-    "semdMsgFromNotifications",
+    'semdMsgFromNotifications',
     async ({ userId, msgSendToUserId, msg }) => {
       const { newMsg, error } = await messagesActions.sendMsg(
         userId,
@@ -118,33 +109,32 @@ io.on("connection", (socket) => {
       const isOnline = findConnectedUser(msgSendToUserId);
 
       if (isOnline) {
-        io.to(isOnline.socketId).emit("newMsgReceived", { newMsg });
+        io.to(isOnline.socketId).emit('newMsgReceived', { newMsg });
       } else {
         await messagesActions.setMsgToUnread(msgSendToUserId);
       }
 
-      !error && socket.emit("msgSentFromNotification");
+      !error && socket.emit('msgSentFromNotification');
     }
   );
 
-  socket.on("disconnect", () => {
-    console.log("socket:[disconnect]");
+  socket.on('disconnect', () => {
     removeUser(socket.id);
   });
 });
 
 nextApp.prepare().then(() => {
   app.use(cors());
-  app.use("/api/signup", signupRoute);
-  app.use("/api/auth", authRoute);
-  app.use("/api/search", searchRoute);
-  app.use("/api/posts", postRoute);
-  app.use("/api/profile", profileRouter);
-  app.use("/api/notifications", notificationsRouter);
-  app.use("/api/chats", chatRouter);
-  app.use("/api/reset", resetRouter);
+  app.use('/api/signup', signupRoute);
+  app.use('/api/auth', authRoute);
+  app.use('/api/search', searchRoute);
+  app.use('/api/posts', postRoute);
+  app.use('/api/profile', profileRouter);
+  app.use('/api/notifications', notificationsRouter);
+  app.use('/api/chats', chatRouter);
+  app.use('/api/reset', resetRouter);
 
-  app.all("*", (req, res) => handler(req, res));
+  app.all('*', (req, res) => handler(req, res));
   server.listen(PORT, (err) => {
     if (err) throw err;
     console.log(`Express server running on ${PORT}`);

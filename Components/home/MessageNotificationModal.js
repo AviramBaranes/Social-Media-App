@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { Form, Modal, Segment, List, Icon } from "semantic-ui-react";
-import Link from "next/link";
-import calculateTime from "../../utils/calculateTime";
+import React, { useState } from 'react';
+import { Form, Modal, Segment, List, Icon } from 'semantic-ui-react';
+import Link from 'next/link';
+import calculateTime from '../../utils/calculateTime';
 
 function MessageNotificationModal({
   newMessageReceived,
@@ -10,8 +10,7 @@ function MessageNotificationModal({
   newMessageModal,
   showNewMessageModal,
 }) {
-  console.log("here");
-  const [text, setText] = useState("");
+  const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
 
   const onModalClose = () => showNewMessageModal(false);
@@ -20,13 +19,13 @@ function MessageNotificationModal({
     e.preventDefault();
 
     if (socket.current) {
-      socket.current.emit("semdMsgFromNotifications", {
+      socket.current.emit('semdMsgFromNotifications', {
         userId: user._id,
         msgSendToUserId: newMessageReceived.sender,
         msg: text,
       });
 
-      socket.current.on("msgSentFromNotification", () =>
+      socket.current.on('msgSentFromNotification', () =>
         showNewMessageModal(false)
       );
     }
@@ -35,7 +34,7 @@ function MessageNotificationModal({
   return (
     <>
       <Modal
-        size="small"
+        size='small'
         open={newMessageModal}
         onClose={onModalClose}
         closeIcon
@@ -46,33 +45,33 @@ function MessageNotificationModal({
         />
 
         <Modal.Content>
-          <div className="bubbleWrapper">
-            <div className="inlineContainer">
+          <div className='bubbleWrapper'>
+            <div className='inlineContainer'>
               <img
-                className="inlineIcon"
+                className='inlineIcon'
                 src={newMessageReceived.senderProfilePic}
               />
             </div>
 
-            <div className="otherBubble other">{newMessageReceived.msg}</div>
+            <div className='otherBubble other'>{newMessageReceived.msg}</div>
 
-            <span className="other">
+            <span className='other'>
               {calculateTime(newMessageReceived.date)}
             </span>
           </div>
 
-          <div style={{ position: "sticky", bottom: "0px" }}>
-            <Segment secondary color="teal" attached="bottom">
+          <div style={{ position: 'sticky', bottom: '0px' }}>
+            <Segment secondary color='teal' attached='bottom'>
               <Form reply onSubmit={formSubmit}>
                 <Form.Input
-                  size="large"
-                  placeholder="Send New Message"
+                  size='large'
+                  placeholder='Send New Message'
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   action={{
-                    color: "blue",
-                    icon: "telegram plane",
-                    disabled: text === "",
+                    color: 'blue',
+                    icon: 'telegram plane',
+                    disabled: text === '',
                     loading: loading,
                   }}
                 />
@@ -80,7 +79,7 @@ function MessageNotificationModal({
             </Segment>
           </div>
 
-          <div style={{ marginTop: "5px" }}>
+          <div style={{ marginTop: '5px' }}>
             <Link href={`/messages?message=${newMessageReceived.sender}`}>
               <a>View All Messages</a>
             </Link>
@@ -98,7 +97,7 @@ function MessageNotificationModal({
 const Instructions = ({ username }) => (
   <List>
     <List.Item>
-      <Icon name="help" />
+      <Icon name='help' />
       <List.Content>
         <List.Header>
           If you do not like this popup to appear when you receive a new
@@ -108,7 +107,7 @@ const Instructions = ({ username }) => (
     </List.Item>
 
     <List.Item>
-      <Icon name="hand point right" />
+      <Icon name='hand point right' />
       <List.Content>
         You can disable it by going to
         <Link href={`/${username}`}>
@@ -119,12 +118,12 @@ const Instructions = ({ username }) => (
     </List.Item>
 
     <List.Item>
-      <Icon name="hand point right" />
+      <Icon name='hand point right' />
       Inside the menu,there is an setting named: Show New Message Popup?
     </List.Item>
 
     <List.Item>
-      <Icon name="hand point right" />
+      <Icon name='hand point right' />
       Just toggle the setting to disable/enable the Message Popup to appear.
     </List.Item>
   </List>
